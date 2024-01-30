@@ -12,7 +12,14 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
     @Published public var isConnecting: Bool = false
     @Published public var isConnected: Bool = false
     
-    public override init() {
+    let serviceUUID: CBUUID
+    let nodeRxUUID: CBUUID
+    let nodeTxUUID: CBUUID
+    
+    public init(serviceUUID: String, nodeRxUUID: String, nodeTxUUID: String) {
+        self.serviceUUID = CBUUID(string: serviceUUID)
+        self.nodeRxUUID = CBUUID(string: nodeRxUUID)
+        self.nodeTxUUID = CBUUID(string: nodeTxUUID)
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
@@ -28,7 +35,7 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
         }
         
         // Begin scanning for devices with the specified service UUID
-        centralManager.scanForPeripherals(withServices: [CBUUID(string: "AEE0")], options: nil)
+        centralManager.scanForPeripherals(withServices: [serviceUUID], options: nil)
         TerminalManager.shared.addMessage("Scanning for peripherals...")
         
         // Optionally, you can include a timeout for the scan
@@ -71,7 +78,7 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
         TerminalManager.shared.addMessage("Connected to: \(peripheral.name ?? "unknown")")
         
         // Once connected, move to the next step: Discovering services
-        peripheral.discoverServices([CBUUID(string: "AEE0")])
+        peripheral.discoverServices([serviceUUID])
     }
     
     
@@ -85,9 +92,9 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
         
         for service in services {
             TerminalManager.shared.addMessage("Discovered service \(service.uuid)")
-            if service.uuid == CBUUID(string: "AEE0") {
+            if service.uuid == serviceUUID {
                 // Discover characteristics for your service
-                peripheral.discoverCharacteristics([CBUUID(string: "AEE1"), CBUUID(string: "AEE2")], for: service)
+                peripheral.discoverCharacteristics([nodeRxUUID, nodeTxUUID], for: service)
             }
         }
     }
@@ -100,12 +107,12 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
         
         for characteristic in service.characteristics ?? [] {
             switch characteristic.uuid {
-            case CBUUID(string: "AEE1"):
-                TerminalManager.shared.addMessage("Found nodeRx characteristic - notify enabled.")
+            case nodeTxUUID:
+                TerminalManager.shared.addMessage("Found nodeTx characteristic - notify enabled.")
                 nodeTx = characteristic
                 peripheral.setNotifyValue(true, for: characteristic)
-            case CBUUID(string: "AEE2"):
-                TerminalManager.shared.addMessage("Found nodeTx characteristic.")
+            case nodeRxUUID:
+                TerminalManager.shared.addMessage("Found nodeRx characteristic.")
                 nodeRx = characteristic
             default:
                 break
