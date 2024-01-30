@@ -5,6 +5,9 @@ import PackageDescription
 
 let package = Package(
     name: "BLEAppHelpers",
+    platforms: [
+        .iOS(.v13) // This line specifies iOS 13 as the minimum platform version
+    ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
