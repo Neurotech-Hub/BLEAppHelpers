@@ -8,7 +8,9 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
     var connectedPeripheral: CBPeripheral?
     var nodeRx: CBCharacteristic?
     var nodeTx: CBCharacteristic?
-    @Published public var receivedData = ""
+    public var onNodeTxValueUpdated: ((String) -> Void)?
+    
+    @Published var nodeTxValue: String = ""
     @Published public var isConnecting: Bool = false
     @Published public var isConnected: Bool = false
     
@@ -38,7 +40,7 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
         centralManager.scanForPeripherals(withServices: [serviceUUID], options: nil)
         TerminalManager.shared.addMessage("Scanning for peripherals...")
         
-        // Optionally, you can include a timeout for the scan
+        // Include a timeout for the scan
         DispatchQueue.main.asyncAfter(deadline: .now() + 15) { // Adjust the time as needed
             if self.isConnecting {
                 TerminalManager.shared.addMessage("Scan timeout. Stopping scan.")
@@ -156,17 +158,24 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
         }
         
         if let data = characteristic.value, let value = String(data: data, encoding: .utf8) {
-            TerminalManager.shared.addMessage("Recieved: \(value)")
+            let trimmedValue = value.components(separatedBy: "\0").first ?? ""
+            DispatchQueue.main.async {
+                self.nodeTxValue = trimmedValue
+                self.onNodeTxValueUpdated?(trimmedValue)
+            }
         }
     }
     
+    public func getNodeTxValue() -> String {
+        return nodeTxValue
+    }
+
     public func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
         if let error = error {
             TerminalManager.shared.addMessage("Error writing characteristic: \(error.localizedDescription)")
             return
         }
-        
-        TerminalManager.shared.addMessage("Successfully wrote to \(characteristic.uuid)")
+//        TerminalManager.shared.addMessage("Successfully wrote to \(characteristic.uuid)")
     }
     
     public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
@@ -191,7 +200,6 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
         case .poweredOff:
             TerminalManager.shared.addMessage("Bluetooth is powered off.")
             // Handle Bluetooth being turned off
-            // You may want to notify the user to turn it on
             
         case .resetting:
             TerminalManager.shared.addMessage("Bluetooth is resetting.")
