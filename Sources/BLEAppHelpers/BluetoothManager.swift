@@ -5,7 +5,7 @@ import CoreBluetooth
 
 public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     var centralManager: CBCentralManager!
-    var connectedPeripheral: CBPeripheral?
+    public var connectedPeripheral: CBPeripheral?
     var nodeRx: CBCharacteristic?
     var nodeTx: CBCharacteristic?
     public var onNodeTxValueUpdated: ((String) -> Void)?
@@ -14,14 +14,14 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
     @Published public var isConnecting: Bool = false
     @Published public var isConnected: Bool = false
     
-    let serviceUUID: CBUUID
-    let nodeRxUUID: CBUUID
-    let nodeTxUUID: CBUUID
+    @Published public var serviceUUID: CBUUID
+    @Published public var nodeRxUUID: CBUUID
+    @Published public var nodeTxUUID: CBUUID
     
-    public init(serviceUUID: String, nodeRxUUID: String, nodeTxUUID: String) {
-        self.serviceUUID = CBUUID(string: serviceUUID)
-        self.nodeRxUUID = CBUUID(string: nodeRxUUID)
-        self.nodeTxUUID = CBUUID(string: nodeTxUUID)
+    public init(serviceUUID: CBUUID, nodeRxUUID: CBUUID, nodeTxUUID: CBUUID) {
+        self.serviceUUID = serviceUUID
+        self.nodeRxUUID = nodeRxUUID
+        self.nodeTxUUID = nodeTxUUID
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
