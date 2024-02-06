@@ -9,6 +9,7 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
     var nodeRx: CBCharacteristic?
     var nodeTx: CBCharacteristic?
     public var onNodeTxValueUpdated: ((String) -> Void)?
+    public var onDisconnect: (() -> Void)?
     
     @Published var nodeTxValue: String = ""
     @Published public var isConnecting: Bool = false
@@ -187,6 +188,7 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
         // Update connection status
         DispatchQueue.main.async {
             self.isConnected = false
+            self.onDisconnect?() // Call the disconnect callback
         }
     }
     
