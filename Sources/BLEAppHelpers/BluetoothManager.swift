@@ -39,7 +39,7 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
         
         // Begin scanning for devices with the specified service UUID
         centralManager.scanForPeripherals(withServices: [serviceUUID], options: nil)
-        TerminalManager.shared.addMessage("Scanning for peripherals...")
+        TerminalManager.shared.addMessage("Scanning for peripheral with \(serviceUUID)")
         
         // Include a timeout for the scan
         DispatchQueue.main.asyncAfter(deadline: .now() + 15) { // Adjust the time as needed
