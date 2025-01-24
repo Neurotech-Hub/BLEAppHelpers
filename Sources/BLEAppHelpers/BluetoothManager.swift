@@ -19,6 +19,11 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
     @Published public var nodeRxUUID: CBUUID
     @Published public var nodeTxUUID: CBUUID
     
+    /// The current negotiated MTU size. This will be updated after connection.
+    /// For SiLabs devices with variable length characteristics, the maximum is 255 bytes.
+    /// Note: CoreBluetooth automatically negotiates the MTU size during connection.
+    @Published public var currentMTU: Int = 23  // Default BLE MTU size
+    
     public init(serviceUUID: CBUUID, nodeRxUUID: CBUUID, nodeTxUUID: CBUUID) {
         self.serviceUUID = serviceUUID
         self.nodeRxUUID = nodeRxUUID
@@ -79,6 +84,13 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
     
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         TerminalManager.shared.addMessage("Connected to: \(peripheral.name ?? "unknown")")
+        
+        // Get the negotiated MTU size
+        if #available(iOS 11.0, macOS 10.13, *) {
+            // The actual MTU size will be (maximumWriteValueLength + 3) for ATT header
+            self.currentMTU = peripheral.maximumWriteValueLength(for: .withResponse) + 3
+            TerminalManager.shared.addMessage("Negotiated MTU size: \(self.currentMTU) bytes")
+        }
         
         // Once connected, move to the next step: Discovering services
         peripheral.discoverServices([serviceUUID])
@@ -225,5 +237,14 @@ public class BluetoothManager: NSObject, ObservableObject, CBCentralManagerDeleg
         }
     }
     
-    
+    /// Returns the maximum amount of data that can be sent in a single write operation
+    /// This is useful for clients that need to chunk large amounts of data
+    public func getMaximumWriteLength() -> Int {
+        if let peripheral = connectedPeripheral, peripheral.state == .connected {
+            if #available(iOS 11.0, macOS 10.13, *) {
+                return peripheral.maximumWriteValueLength(for: .withResponse)
+            }
+        }
+        return 20  // Default ATT MTU size minus ATT header (23 - 3)
+    }
 }
